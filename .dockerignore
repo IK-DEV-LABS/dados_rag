@@ -1,0 +1,16 @@
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.agent/
+.vscode/
+.git/
+.gitignore
+chroma_db/
+bm25_index.pkl
+documentos_oficiais/
+*.log
+.env
