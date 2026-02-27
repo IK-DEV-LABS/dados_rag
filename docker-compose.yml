@@ -2,25 +2,15 @@ services:
   chroma-server:
     image: chromadb/chroma
     container_name: chroma-dados-rag
-    ports:
-      - "8000:8000"
+    network_mode: "host"
     volumes:
       - ./chroma_db:/chroma/chroma
-    networks:
-      - rag-network-shared
 
   rag-api:
     build: .
     container_name: rag-api-service
-    ports:
-      - "8002:8002"
+    network_mode: "host"
     env_file:
       - .env
     depends_on:
       - chroma-server
-    networks:
-      - rag-network-shared
-
-networks:
-  rag-network-shared:
-    external: true
