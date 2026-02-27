@@ -15,8 +15,8 @@ COPY requirements.txt .
 # Configurar pip para confiar nos hosts de download (necessário para redes com inspeção SSL)
 ENV PIP_TRUSTED_HOST="pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org"
 
-# Instalar dependências básicas
-RUN pip install --no-cache-dir requests python-dotenv
+# Instalar dependências básicas (com log detalhado para debugar bloqueio de rede)
+RUN pip install -vvv --no-cache-dir requests python-dotenv
 
 # Instalar Torch CPU (muito mais leve que o padrão CUDA e evita timeouts)
 RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 \
