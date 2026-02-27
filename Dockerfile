@@ -18,7 +18,7 @@ COPY requirements.txt .
 # 1. Usar espelhos via HTTP (evita o erro de identidade do certificado no proxy/firewall)
 # 2. Declarar TRUSTED_HOST para que o pip aceite a conexão sem SSL
 ENV PIP_INDEX_URL=http://mirrors.aliyun.com/pypi/simple/
-ENV PIP_TRUSTED_HOST=\"mirrors.aliyun.com pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org pypi.tuna.tsinghua.edu.cn\"
+ENV PIP_TRUSTED_HOST="mirrors.aliyun.com pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org pypi.tuna.tsinghua.edu.cn"
 
 # Instalar o restante das dependências (mais lento, mas foge do erro 403 e SSL)
 RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt || \
