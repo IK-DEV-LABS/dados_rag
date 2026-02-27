@@ -13,14 +13,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # Instalar dependências básicas
-RUN pip install --no-cache-dir requests python-dotenv
+RUN pip install --no-cache-dir \
+  --trusted-host pypi.org \
+  --trusted-host files.pythonhosted.org \
+  requests python-dotenv
 
 # Instalar Torch CPU (muito mais leve que o padrão CUDA e evita timeouts)
 RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 \
+  --trusted-host download.pytorch.org \
   torch --index-url https://download.pytorch.org/whl/cpu
 
 # Instalar o restante das dependências
-RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 \
+  --trusted-host pypi.org \
+  --trusted-host files.pythonhosted.org \
+  -r requirements.txt
 
 # Copiar o restante do código do projeto
 COPY . .
