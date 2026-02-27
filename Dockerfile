@@ -14,8 +14,10 @@ COPY requirements.txt .
 
 # Instalar dependências básicas
 RUN pip install --no-cache-dir \
+  --index-url http://pypi.org/simple \
   --trusted-host pypi.org \
   --trusted-host files.pythonhosted.org \
+  --trusted-host pypi.python.org \
   requests python-dotenv
 
 # Instalar Torch CPU (muito mais leve que o padrão CUDA e evita timeouts)
@@ -25,8 +27,10 @@ RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 \
 
 # Instalar o restante das dependências
 RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 \
+  --index-url http://pypi.org/simple \
   --trusted-host pypi.org \
   --trusted-host files.pythonhosted.org \
+  --trusted-host pypi.python.org \
   -r requirements.txt
 
 # Copiar o restante do código do projeto
