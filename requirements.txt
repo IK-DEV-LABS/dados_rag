@@ -17,4 +17,6 @@ rank_bm25
 fastapi
 uvicorn
 pydantic
-sentence_transformers
+sentence-transformers==3.4.1
+numpy<2.0.0
+transformers>=4.41.0

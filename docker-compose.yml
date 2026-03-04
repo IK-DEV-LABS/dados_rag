@@ -1,16 +1,18 @@
 services:
-  chroma-server:
-    image: chromadb/chroma
-    container_name: chroma-dados-rag
-    network_mode: "host"
-    volumes:
-      - ./chroma_db:/chroma/chroma
-
   rag-api:
     build: .
     container_name: rag-api-service
-    network_mode: "host"
+    ports:
+      - "8002:8002"
+    networks:
+      - rag-network-shared
     env_file:
       - .env
-    depends_on:
-      - chroma-server
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./documentos_oficiais:/app/documentos_oficiais
+    restart: unless-stopped
+
+networks:
+  rag-network-shared:
+    driver: bridge # Cria a rede automaticamente no notebook

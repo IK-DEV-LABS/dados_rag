@@ -151,16 +151,14 @@ cython_debug/
 # VS Code
 .vscode/
 
-# Project Specific Data
-documentos_oficiais/
-chroma_db/
-bm25_index.pkl
-*.pptx
-*.pkl
-test_auth.py
-simulate_external_service.py
-mateus.py
-test_api.py
+# Project Specific Exclusions
+GUIA_DEPLOY_PROD.md
+resumo_eficiencia_antiga_nova.md
+logs.txt
+output_logs.txt
+docker-compose.local.yml
+docker-compose.prod.yml
+docker-compose.test.yml
 
 # Agent and Gemini specific files
 .agent/

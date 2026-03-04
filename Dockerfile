@@ -20,6 +20,12 @@ COPY requirements.txt .
 ENV PIP_INDEX_URL=http://mirrors.aliyun.com/pypi/simple/
 ENV PIP_TRUSTED_HOST="mirrors.aliyun.com pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org pypi.tuna.tsinghua.edu.cn"
 
+# OTIMIZAÇÃO DE ESPAÇO E COMPATIBILIDADE (GCP M2):
+# 1. Instalamos o NumPy < 2.0 (evita quebra do PyTorch/Transformers)
+# 2. Instalamos o Torch CPU via link direto (180MB em vez de 1.5GB) para ignorar mirrors problemáticos
+RUN pip install --no-cache-dir "numpy<2.0.0" && \
+  pip install --no-cache-dir https://download.pytorch.org/whl/cpu/torch-2.2.1%2Bcpu-cp311-cp311-linux_x86_64.whl
+
 # Instalar o restante das dependências (mais lento, mas foge do erro 403 e SSL)
 RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt || \
   pip install --no-cache-dir --index-url http://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt

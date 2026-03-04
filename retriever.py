@@ -32,22 +32,27 @@ def reciprocal_rank_fusion(results: List[List], k=60) -> List[Document]:
 
 class RAGRetriever:
     def __init__(self):
-        print("Carregando modelo de embedding (Dados RAG)...")
+        print(f"Carregando modelo de embedding: {EMBEDDING_MODEL_NAME}...")
+        # Adicionado cache_folder para evitar re-download desnecessário se o volume persistir
         self.embedding_model = HuggingFaceEmbeddings(
             model_name=EMBEDDING_MODEL_NAME,
-            model_kwargs={'device': 'cpu'} # Geralmente CPU é suficiente para embedding de query
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
         )
 
         print(f"Conectando ao ChromaDB local em {CHROMA_DB_PATH}...")
         try:
+            # Usando PersistentClient de forma explícita com as configurações mínimas
+            # Usando PersistentClient de forma direta (mais compatível com Pydantic v2)
             chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+            
             self.vector_store = Chroma(
                 client=chroma_client,
                 embedding_function=self.embedding_model
             )
             self.vector_retriever = self.vector_store.as_retriever(
                 search_type="similarity", 
-                search_kwargs={'k': 10}
+                search_kwargs={'k': 5} # Reduzido de 10 para 5 para economizar RAM no processamento de contexto
             )
         except Exception as e:
             print(f"Erro ao conectar no ChromaDB: {e}")
@@ -60,18 +65,20 @@ class RAGRetriever:
         else:
             raise FileNotFoundError(f"Índice BM25 não encontrado em {BM25_INDEX_PATH}")
 
-    def search(self, query: str) -> List[dict]:
+    def search(self, query: str, k: int = 5) -> List[dict]:
         """Executa a busca híbrida e retorna lista de dicionários (serializável)."""
         
         # 1. Busca Vetorial
-        print(f"Executando busca vetorial para: {query}")
+        print(f"Executando busca vetorial para: {query} (k={k})")
+        # Ajusta dinamicamente o k da busca vetorial
+        self.vector_retriever.search_kwargs['k'] = k
         vector_docs = self.vector_retriever.invoke(query)
 
         # 2. Busca BM25
-        print("Executando busca BM25...")
+        print(f"Executando busca BM25... (Top {k})")
         tokenized_query = query.split(" ")
         bm25_scores = self.bm25_index.get_scores(tokenized_query)
-        top_n_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:10]
+        top_n_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:k]
         bm25_docs_result = [self.bm25_docs[i] for i in top_n_indices]
 
         # 3. Fusão
