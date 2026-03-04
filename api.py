@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Optional, Dict, Any
 from retriever import RAGRetriever
 
 # Carrega variáveis de ambiente
@@ -12,19 +12,23 @@ load_dotenv()
 # Configurações de Segurança
 security = HTTPBearer()
 BACKEND_INTERNAL_TOKEN = os.getenv("BACKEND_INTERNAL_TOKEN")
+MASTER_TOKEN = os.getenv("MASTER_TOKEN")
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.credentials != BACKEND_INTERNAL_TOKEN:
+    token = credentials.credentials
+    if token != BACKEND_INTERNAL_TOKEN and (not MASTER_TOKEN or token != MASTER_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido ou ausente",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return credentials.credentials
+    return token
 
 # --- Modelos ---
 class RetrieveRequest(BaseModel):
     query: str
+    k: Optional[int] = 10
+    user: Optional[str] = None
 
 class DocumentModel(BaseModel):
     page_content: str
@@ -55,7 +59,7 @@ async def retrieve_documents(request: RetrieveRequest, token: str = Depends(veri
         raise HTTPException(status_code=503, detail="Serviço de busca não inicializado.")
     
     try:
-        docs = retriever_service.search(request.query)
+        docs = retriever_service.search(request.query, k=request.k)
         return RetrieveResponse(documents=docs)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

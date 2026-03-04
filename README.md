@@ -1,44 +1,40 @@
-# RAG Data Service - Microsserviço de Contexto
+# RAG Data Service - Microsserviço de Contexto (Otimizado 🚀)
 
-Este projeto é um microsserviço especializado na **ingestão, indexação e recuperação (Retrieval)** de documentos corporativos. Ele utiliza uma abordagem de **Busca Híbrida** (ChromaDB para busca vetorial + BM25 para busca por palavras-chave).
+Este projeto é um microsserviço especializado na **ingestão, indexação e recuperação (Retrieval)** de documentos corporativos, otimizado para rodar em ambientes com recursos limitados (GCP M2) e validado para estabilidade via Docker.
 
-## 🚀 Arquitetura de Microserviços
-
-Este serviço faz parte de um ecossistema RAG distribuído:
-1.  **Dados RAG (Este projeto):** Responsável por baixar arquivos do SharePoint, vetorizar e servir os trechos mais relevantes via API.
-2.  **Backend (IA Agent):** Consome este serviço para obter contexto e gerar respostas usando LLMs (OpenAI/Ollama).
-
----
-
-## 🛠️ Novas Funcionalidades: Inicialização Inteligente (Smart Start)
-
-O sistema agora possui uma lógica de inicialização otimizada no `entrypoint.sh`:
-- **Verificação Automática**: O container detecta se o banco de dados (`chroma_db`) e o índice (`bm25_index.pkl`) já existem.
-- **Skip de Indexação**: Se os dados já estiverem presentes, o container pula o download e a indexação, iniciando a API instantaneamente.
-- **Forçar Re-indexação**: Caso precise atualizar os documentos, basta definir a variável de ambiente `FORCE_REINDEX=true` no momento da execução.
+## ⚡ Destaques da Otimização
+*   **Memória RAM**: Redução de ~2.5GB para **~470MB** (Economia de ~82%).
+*   **Modelo de Embedding**: Transição para o `paraphrase-multilingual-MiniLM-L12-v2` (leve e preciso em Português).
+*   **Smart Indexing**: Sistema de detecção de mudanças via **Hash MD5**. O container só processa arquivos novos ou alterados.
+*   **Build Estabilizado**: Travado em `sentence-transformers==3.4.1` para evitar bugs de regressão em versões mais recentes.
+*   **Busca Híbrida**: Combinação de busca semântica (ChromaDB) + busca por palavra-chave (BM25Okapi) via fusion RRF.
 
 ---
 
-## 🐳 Deploy e Execução (Docker)
+## 🚀 Arquitetura e Integração
 
-Para que este serviço se comunique com o Backend em terminais ou containers separados, utilizamos uma **Rede Docker Externa**.
+O serviço opera de forma integrada com o ecossistema RAG:
+1.  **Dados RAG (Este projeto):** Gerencia o banco vetorial e disponibiliza os chunks via API.
+2.  **Backend (IA Agent):** Consome este serviço via porta `8002` para compor o contexto do LLM.
 
-### 1. Criar a Rede (Uma única vez)
-```powershell
-docker network create rag-network-shared
-```
+---
 
-### 2. Configurar o .env
-Certifique-se de que o seu `.env` contém o token de segurança:
-```ini
-BACKEND_INTERNAL_TOKEN=seu_token_aqui
-```
+## 🐳 Como Executar (Docker)
 
-### 3. Iniciar o Serviço
+O serviço agora é auto-suficiente e gerencia a rede `rag-network-shared` automaticamente.
+
+### 1. Startup e Build
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
-*A API estará disponível internamente na rede Docker como `rag-api-service:8002`.*
+*O sistema instalará a versão otimizada da PyTorch CPU (aprox. 180MB) e o modelo leve de embedding no primeiro boot.*
+
+### 2. Comandos Úteis
+| Ação | Comando |
+| :--- | :--- |
+| Ver Logs | `docker logs -f rag-api-service` |
+| Ver Recursos (RAM/CPU) | `docker stats rag-api-service` |
+| Forçar Re-indexação | Altere `FORCE_REINDEX=true` no `.env` e reinicie |
 
 ---
 
@@ -46,22 +42,29 @@ docker-compose up --build
 
 ### Endpoint: `/retrieve`
 *   **Método:** `POST`
-*   **Autenticação:** Header `Authorization: Bearer <BACKEND_INTERNAL_TOKEN>`.
+*   **Headers:** `Authorization: Bearer <TOKEN_DE_SEGURANCA>`
 
-#### Exemplo de Requisição
+#### Estrutura do JSON
 ```json
 {
-  "query": "Como configurar o sistema?",
-  "k": 7
+  "query": "procedimento de segurança",
+  "k": 5
 }
 ```
 
 ---
 
-## ⚙️ Variáveis de Ambiente Principais
+## ⚙️ Configurações (.env)
 
-| Variável | Descrição |
-| :--- | :--- |
-| `DOCUMENTS_PATH` | Caminho local dos documentos PDF. |
-| `FORCE_REINDEX` | Se `true`, força o download e indexação no boot. |
-| `BACKEND_INTERNAL_TOKEN` | Token para validar requisições do backend. |
+| Variável | Valor Recomendado | Descrição |
+| :--- | :--- | :--- |
+| `MASTER_TOKEN` | `[TOKEN_PARA_TESTES]` | Token alternativo para validação rápida via Postman. |
+| `BACKEND_INTERNAL_TOKEN` | `[CHAVE_INTERNA]` | Token de comunicação oficial entre microsserviços. |
+| `CHROMA_DB_PATH` | `./chroma_db` | Pasta de persistência (mapeada no volume Docker). |
+
+---
+
+## 🛠️ Troubleshooting (Resolução de Problemas)
+- **Erro de Certificado/SSL no Build**: O Dockerfile já usa espelhos via HTTP (`mirrors.aliyun.com`) para contornar bloqueios de rede no servidor.
+- **NameError 'nn' ou ImportErrors**: Se ocorrer erro no startup, verifique se a versão da `sentence-transformers` está fixa em `3.4.1` no `requirements.txt`. Versões superiores (como 5.2.x) podem apresentar instabilidades em ambientes CPU.
+```
